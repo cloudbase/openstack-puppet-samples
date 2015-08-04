@@ -543,7 +543,7 @@ file_line { 'dashboard_default_role':
 }
 ->
 exec { 'get-openstack-dashboard-theme':
-  command => 'wget -q https://github.com/cloudbase/horizon-cloudbase/raw/kilo/openstack-dashboard-cloudbase-theme.deb -O \
+  command => 'wget -q https://github.com/cloudbase/horizon-cloudbase/releases/download/2015.1.1/openstack-dashboard-cloudbase-theme.deb -O \
 /tmp/openstack-dashboard-cloudbase-theme.deb',
   unless  => [ 'test -f /tmp/openstack-dashboard-cloudbase-theme.deb' ],
   path    => [ '/usr/bin/', '/bin' ],
