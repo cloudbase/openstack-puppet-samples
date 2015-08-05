@@ -15,7 +15,7 @@ $public_subnet_gateway = '192.168.209.2'
 $public_subnet_allocation_pools = ['start=192.168.209.30,end=192.168.209.50']
 
 # Note: this is executed on the master
-$gateway = generate("/bin/sh", "-c", "/sbin/ip route show | /bin/grep default | /usr/bin/awk \'{print \$3}\'")
+$gateway = generate('/bin/sh', '-c', "/sbin/ip route show | /bin/grep default | /usr/bin/awk \'{print \$3}\'")
 
 $ext_bridge_interface_repl = regsubst($ext_bridge_interface, '-', '_')
 $ext_bridge_interface_ip = inline_template("<%= scope.lookupvar('::ipaddress_${ext_bridge_interface_repl}') -%>")
@@ -30,7 +30,7 @@ if $ext_bridge_interface_ip {
 
 $cinder_loopback_base_dir = '/var/lib/cinder'
 $cinder_loopback_device_file_name = "${cinder_loopback_base_dir}/cinder-volumes.img"
-$cinder_lvm_vg = "cinder-volumes"
+$cinder_lvm_vg = 'cinder-volumes'
 
 notify { "Local IP: ${local_ip}":}
 ->
@@ -48,8 +48,8 @@ apt::source { 'ubuntu-cloud':
   required_packages =>  'ubuntu-cloud-keyring',
 }
 ->
-exec { "apt-update":
-    command => "/usr/bin/apt-get update"
+exec { 'apt-update':
+    command => '/usr/bin/apt-get update'
 }
 -> Package <| |>
 
@@ -118,18 +118,18 @@ keystone_role { 'demo':
 }
 
 keystone_user_role { 'admin@admin':
-  roles  => ['admin'],
   ensure => present,
+  roles  => ['admin'],
 }
 
 keystone_user_role { 'admin@services':
-  roles  => ['admin'],
   ensure => present,
+  roles  => ['admin'],
 }
 
 keystone_user_role { 'demo@demo':
-  roles  => ['demo'],
   ensure => present,
+  roles  => ['demo'],
 }
 
 ######## RabbitMQ
@@ -198,8 +198,8 @@ class { 'glance::notify::rabbitmq':
 }
 
 keystone_user_role { 'glance@services':
-  roles  => ['admin'],
   ensure => present,
+  roles  => ['admin'],
 }
 
 exec { 'retrieve_cirros_image':
@@ -231,10 +231,10 @@ keystone_service { 'nova':
 }
 
 keystone_endpoint { "${region_name}/nova":
-   ensure       => present,
-   public_url   => "http://${local_ip}:8774/v2/%(tenant_id)s",
-   admin_url    => "http://${local_ip}:8774/v2/%(tenant_id)s",
-   internal_url => "http://${local_ip}:8774/v2/%(tenant_id)s",
+  ensure       => present,
+  public_url   => "http://${local_ip}:8774/v2/%(tenant_id)s",
+  admin_url    => "http://${local_ip}:8774/v2/%(tenant_id)s",
+  internal_url => "http://${local_ip}:8774/v2/%(tenant_id)s",
 }
 
 keystone_user { 'nova':
@@ -245,8 +245,8 @@ keystone_user { 'nova':
 }
 
 keystone_user_role { 'nova@services':
-  roles  => ['admin'],
   ensure => present,
+  roles  => ['admin'],
 }
 
 class { 'nova':
@@ -265,15 +265,15 @@ class { 'nova::db::mysql':
 }
 
 class { 'nova::api':
-  enabled           => true,
-  auth_uri          => "http://${local_ip}:5000/v2.0",
-  identity_uri      => "http://${local_ip}:35357",
-  admin_user        => 'nova',
-  admin_password    => $admin_password,
-  admin_tenant_name => 'services',
+  enabled                              => true,
+  auth_uri                             => "http://${local_ip}:5000/v2.0",
+  identity_uri                         => "http://${local_ip}:35357",
+  admin_user                           => 'nova',
+  admin_password                       => $admin_password,
+  admin_tenant_name                    => 'services',
   neutron_metadata_proxy_shared_secret => $metadata_proxy_shared_secret,
-  #ratelimits       => '(POST, "*", .*, 10, MINUTE);(POST, "*/servers", ^/servers, 50, DAY);(PUT, "*", .*, 10, MINUTE)',
-  validate          => true,
+  #ratelimits                          => '(POST, "*", .*, 10, MINUTE);(POST, "*/servers", ^/servers, 50, DAY);(PUT, "*", .*, 10, MINUTE)',
+  validate                             => true,
 }
 
 class { 'nova::network::neutron':
@@ -330,10 +330,10 @@ keystone_service { 'neutron':
 }
 
 keystone_endpoint { "${region_name}/neutron":
-   ensure       => present,
-   public_url   => "http://${local_ip}:9696",
-   admin_url    => "http://${local_ip}:9696",
-   internal_url => "http://${local_ip}:9696",
+  ensure       => present,
+  public_url   => "http://${local_ip}:9696",
+  admin_url    => "http://${local_ip}:9696",
+  internal_url => "http://${local_ip}:9696",
 }
 
 keystone_user { 'neutron':
@@ -344,21 +344,21 @@ keystone_user { 'neutron':
 }
 
 keystone_user_role { 'neutron@services':
-  roles => ['admin'],
   ensure => present,
+  roles  => ['admin'],
 }
 
 class { '::neutron':
-    enabled               => true,
-    bind_host             => '0.0.0.0',
-    rabbit_host           => $local_ip,
-    rabbit_user           => 'openstack',
-    rabbit_password       => $admin_password,
-    verbose               => true,
-    debug                 => false,
-    core_plugin           => 'ml2',
-    service_plugins       => ['router', 'metering'],
-    allow_overlapping_ips => true,
+  enabled               => true,
+  bind_host             => '0.0.0.0',
+  rabbit_host           => $local_ip,
+  rabbit_user           => 'openstack',
+  rabbit_password       => $admin_password,
+  verbose               => true,
+  debug                 => false,
+  core_plugin           => 'ml2',
+  service_plugins       => ['router', 'metering'],
+  allow_overlapping_ips => true,
 }
 
 class { 'neutron::server':
@@ -397,7 +397,7 @@ network::interface { 'br-ex':
   ipaddress       => $local_ip,
   netmask         => $local_ip_netmask,
   gateway         => $gateway,
-  dns_nameservers => join($dns_nameservers, " "),
+  dns_nameservers => join($dns_nameservers, ' '),
 }
 
 Vs_port['eth0']
@@ -538,7 +538,7 @@ file_line { 'dashboard_openstack_host':
 file_line { 'dashboard_default_role':
   ensure => present,
   path   => '/etc/openstack-dashboard/local_settings.py',
-  line   => "OPENSTACK_KEYSTONE_DEFAULT_ROLE = 'user'",
+  line   => 'OPENSTACK_KEYSTONE_DEFAULT_ROLE = \'user\'',
   match  => '^OPENSTACK_KEYSTONE_DEFAULT_ROLE\s=.*',
 }
 ->
@@ -569,10 +569,10 @@ keystone_service { 'cinder':
 }
 
 keystone_endpoint { "${region_name}/cinder":
-   ensure       => present,
-   public_url   => "http://${local_ip}:8776/v2/%(tenant_id)s",
-   admin_url    => "http://${local_ip}:8776/v2/%(tenant_id)s",
-   internal_url => "http://${local_ip}:8776/v2/%(tenant_id)s",
+  ensure       => present,
+  public_url   => "http://${local_ip}:8776/v2/%(tenant_id)s",
+  admin_url    => "http://${local_ip}:8776/v2/%(tenant_id)s",
+  internal_url => "http://${local_ip}:8776/v2/%(tenant_id)s",
 }
 
 keystone_service { 'cinderv2':
@@ -582,10 +582,10 @@ keystone_service { 'cinderv2':
 }
 
 keystone_endpoint { "${region_name}/cinderv2":
-   ensure       => present,
-   public_url   => "http://${local_ip}:8776/v2/%(tenant_id)s",
-   admin_url    => "http://${local_ip}:8776/v2/%(tenant_id)s",
-   internal_url => "http://${local_ip}:8776/v2/%(tenant_id)s",
+  ensure       => present,
+  public_url   => "http://${local_ip}:8776/v2/%(tenant_id)s",
+  admin_url    => "http://${local_ip}:8776/v2/%(tenant_id)s",
+  internal_url => "http://${local_ip}:8776/v2/%(tenant_id)s",
 }
 
 keystone_user { 'cinder':
@@ -596,8 +596,8 @@ keystone_user { 'cinder':
 }
 
 keystone_user_role { 'cinder@services':
-  roles => ['admin'],
   ensure => present,
+  roles  => ['admin'],
 }
 
 class { 'cinder':
@@ -636,7 +636,7 @@ file { $cinder_loopback_base_dir:
   ensure => directory,
 }
 ->
-exec { "create_cinder_lvm_loopback_file":
+exec { 'create_cinder_lvm_loopback_file':
   command => "dd if=/dev/zero of=${cinder_loopback_device_file_name} bs=1M count=0 seek=${cinder_lvm_loopback_device_size_mb} && \
 losetup /dev/loop0 ${cinder_loopback_device_file_name} && \
 pvcreate /dev/loop0 && vgcreate ${cinder_lvm_vg} /dev/loop0",
@@ -655,7 +655,7 @@ file_line { 'create_cinder_lvm_loopback_file_rc_local':
 file_line { 'rc_local_remove_exit':
   ensure => absent,
   path   => '/etc/rc.local',
-  line   => "exit 0",
+  line   => 'exit 0',
 }
 ->
 class { 'cinder::volume::iscsi':
@@ -666,23 +666,23 @@ class { 'cinder::volume::iscsi':
 
 ######## Keystone files to be sourced
 
-file { "/root/keystonerc_admin":
-  ensure => present,
+file { '/root/keystonerc_admin':
+  ensure  => present,
   content =>
 "export OS_AUTH_URL=http://${local_ip}:35357/v2.0
 export OS_USERNAME=admin
-export OS_PASSWORD=$admin_password
+export OS_PASSWORD=${admin_password}
 export OS_TENANT_NAME=admin
 export OS_VOLUME_API_VERSION=2
 ",
 }
 
-file { "/root/keystonerc_demo":
-  ensure => present,
+file { '/root/keystonerc_demo':
+  ensure  => present,
   content =>
 "export OS_AUTH_URL=http://${local_ip}:35357/v2.0
 export OS_USERNAME=demo
-export OS_PASSWORD=$demo_password
+export OS_PASSWORD=${demo_password}
 export OS_TENANT_NAME=demo
 export OS_VOLUME_API_VERSION=2
 ",
