@@ -38,6 +38,10 @@ $cinder_loopback_device_file_name = "${cinder_loopback_base_dir}/\
 cinder-volumes.img"
 $cinder_lvm_vg = 'cinder-volumes'
 
+if !$local_ip {
+  fail('$local_ip variable must be set')
+}
+
 notify { "Local IP: ${local_ip}":}
 ->
 notify { "Netmask: ${local_ip_netmask}":}
