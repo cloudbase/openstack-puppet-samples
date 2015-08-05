@@ -15,21 +15,27 @@ $public_subnet_gateway = '192.168.209.2'
 $public_subnet_allocation_pools = ['start=192.168.209.30,end=192.168.209.50']
 
 # Note: this is executed on the master
-$gateway = generate('/bin/sh', '-c', "/sbin/ip route show | /bin/grep default | /usr/bin/awk \'{print \$3}\'")
+$gateway = generate('/bin/sh',
+'-c', '/sbin/ip route show | /bin/grep default | /usr/bin/awk \'{print $3}\'')
 
 $ext_bridge_interface_repl = regsubst($ext_bridge_interface, '-', '_')
-$ext_bridge_interface_ip = inline_template("<%= scope.lookupvar('::ipaddress_${ext_bridge_interface_repl}') -%>")
+$ext_bridge_interface_ip = inline_template(
+"<%= scope.lookupvar('::ipaddress_${ext_bridge_interface_repl}') -%>")
 
 if $ext_bridge_interface_ip {
   $local_ip = $ext_bridge_interface_ip
-  $local_ip_netmask = inline_template("<%= scope.lookupvar('::netmask_${ext_bridge_interface_repl}') -%>")
+  $local_ip_netmask = inline_template(
+"<%= scope.lookupvar('::netmask_${ext_bridge_interface_repl}') -%>")
 } else {
-  $local_ip = inline_template("<%= scope.lookupvar('::ipaddress_${interface}') -%>")
-  $local_ip_netmask = inline_template("<%= scope.lookupvar('::netmask_${interface}') -%>")
+  $local_ip = inline_template(
+"<%= scope.lookupvar('::ipaddress_${interface}') -%>")
+  $local_ip_netmask = inline_template(
+"<%= scope.lookupvar('::netmask_${interface}') -%>")
 }
 
 $cinder_loopback_base_dir = '/var/lib/cinder'
-$cinder_loopback_device_file_name = "${cinder_loopback_base_dir}/cinder-volumes.img"
+$cinder_loopback_device_file_name = "${cinder_loopback_base_dir}/\
+cinder-volumes.img"
 $cinder_lvm_vg = 'cinder-volumes'
 
 notify { "Local IP: ${local_ip}":}
@@ -70,7 +76,8 @@ class { 'keystone':
   client_package_ensure => latest,
   catalog_type          => 'sql',
   admin_token           => $admin_token,
-  database_connection   => "mysql://keystone:${admin_password}@${local_ip}/keystone",
+  database_connection   =>
+"mysql://keystone:${admin_password}@${local_ip}/keystone",
 }
 
 # Installs the service user endpoint.
@@ -203,18 +210,22 @@ keystone_user_role { 'glance@services':
 }
 
 exec { 'retrieve_cirros_image':
-  command => 'wget -q http://download.cirros-cloud.net/0.3.4/cirros-0.3.4-x86_64-disk.img -O /tmp/cirros-0.3.4-x86_64-disk.img',
-  unless  => [ "glance --os-username admin --os-tenant-name admin --os-password ${admin_password} \
---os-auth-url http://${local_ip}:35357/v2.0 image-show cirros-0.3.4-x86_64" ],
+  command => 'wget -q http://download.cirros-cloud.net/0.3.4/\
+cirros-0.3.4-x86_64-disk.img -O /tmp/cirros-0.3.4-x86_64-disk.img',
+  unless  => [ "glance --os-username admin --os-tenant-name admin \
+--os-password ${admin_password} --os-auth-url http://${local_ip}:35357/v2.0 \
+image-show cirros-0.3.4-x86_64" ],
   path    => [ '/usr/bin/', '/bin' ],
   require => [ Class['glance::api'], Class['glance::registry'] ]
 }
 ->
 exec { 'add_cirros_image':
-  command => "glance --os-username admin --os-tenant-name admin --os-password ${admin_password} --os-auth-url \
-http://${local_ip}:35357/v2.0 image-create --name cirros-0.3.4-x86_64 --file /tmp/cirros-0.3.4-x86_64-disk.img \
+  command => "glance --os-username admin --os-tenant-name admin --os-password \
+${admin_password} --os-auth-url http://${local_ip}:35357/v2.0 image-create \
+--name cirros-0.3.4-x86_64 --file /tmp/cirros-0.3.4-x86_64-disk.img \
 --disk-format qcow2 --container-format bare --is-public True",
-  onlyif  => [ 'test -f /tmp/cirros-0.3.4-x86_64-disk.img' ], # Avoid dependency warning
+  # Avoid dependency warning
+  onlyif  => [ 'test -f /tmp/cirros-0.3.4-x86_64-disk.img' ],
   path    => [ '/usr/bin/', '/bin' ],
 }
 ->
@@ -250,7 +261,8 @@ keystone_user_role { 'nova@services':
 }
 
 class { 'nova':
-  database_connection => "mysql://nova:${admin_password}@${local_ip}/nova?charset=utf8",
+  database_connection =>
+"mysql://nova:${admin_password}@${local_ip}/nova?charset=utf8",
   rabbit_userid       => 'openstack',
   rabbit_password     => $admin_password,
   image_service       => 'nova.image.glance.GlanceImageService',
@@ -272,7 +284,10 @@ class { 'nova::api':
   admin_password                       => $admin_password,
   admin_tenant_name                    => 'services',
   neutron_metadata_proxy_shared_secret => $metadata_proxy_shared_secret,
-  #ratelimits                          => '(POST, "*", .*, 10, MINUTE);(POST, "*/servers", ^/servers, 50, DAY);(PUT, "*", .*, 10, MINUTE)',
+  #ratelimits                          =>
+  #'(POST, "*", .*, 10, MINUTE);\
+  #(POST, "*/servers", ^/servers, 50, DAY);\
+  #(PUT, "*", .*, 10, MINUTE)',
   validate                             => true,
 }
 
@@ -317,7 +332,8 @@ class { 'nova::vncproxy':
 
 class { 'nova::compute::libvirt':
   migration_support => true,
-  vncserver_listen  => '0.0.0.0', # Narrow down if not needed for troubleshooting
+  # Narrow down listening if not needed for troubleshooting
+  vncserver_listen  => '0.0.0.0',
   libvirt_virt_type => 'kvm',
 }
 
@@ -367,7 +383,8 @@ class { 'neutron::server':
   auth_tenant         => 'services',
   auth_uri            => "http://${local_ip}:5000/v2.0",
   identity_uri        => "http://${local_ip}:35357",
-  database_connection => "mysql://neutron:${admin_password}@${local_ip}/neutron?charset=utf8",
+  database_connection =>
+"mysql://neutron:${admin_password}@${local_ip}/neutron?charset=utf8",
   sync_db             => true,
 }
 
@@ -543,7 +560,8 @@ file_line { 'dashboard_default_role':
 }
 ->
 exec { 'get-openstack-dashboard-theme':
-  command => 'wget -q https://github.com/cloudbase/horizon-cloudbase/releases/download/2015.1.1/openstack-dashboard-cloudbase-theme.deb -O \
+  command => 'wget -q https://github.com/cloudbase/horizon-cloudbase/releases/\
+download/2015.1.1/openstack-dashboard-cloudbase-theme.deb -O \
 /tmp/openstack-dashboard-cloudbase-theme.deb',
   unless  => [ 'test -f /tmp/openstack-dashboard-cloudbase-theme.deb' ],
   path    => [ '/usr/bin/', '/bin' ],
@@ -637,7 +655,8 @@ file { $cinder_loopback_base_dir:
 }
 ->
 exec { 'create_cinder_lvm_loopback_file':
-  command => "dd if=/dev/zero of=${cinder_loopback_device_file_name} bs=1M count=0 seek=${cinder_lvm_loopback_device_size_mb} && \
+  command => "dd if=/dev/zero of=${cinder_loopback_device_file_name} bs=1M \
+count=0 seek=${cinder_lvm_loopback_device_size_mb} &&
 losetup /dev/loop0 ${cinder_loopback_device_file_name} && \
 pvcreate /dev/loop0 && vgcreate ${cinder_lvm_vg} /dev/loop0",
   path    => ['/usr/bin/', '/bin', '/sbin'],
