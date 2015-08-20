@@ -37,6 +37,7 @@ $cinder_loopback_base_dir = '/var/lib/cinder'
 $cinder_loopback_device_file_name = "${cinder_loopback_base_dir}/\
 cinder-volumes.img"
 $cinder_lvm_vg = 'cinder-volumes'
+$workers = $::processorcount
 
 if !$local_ip {
   fail('$local_ip variable must be set')
@@ -179,6 +180,7 @@ class { 'glance::api':
   keystone_user       => 'glance',
   keystone_password   => $admin_password,
   database_connection => "mysql://glance:${admin_password}@${local_ip}/glance",
+  workers             => $api_workers,
 }
 
 class { 'glance::registry':
@@ -187,6 +189,8 @@ class { 'glance::registry':
   keystone_user       => 'glance',
   keystone_password   => $admin_password,
   database_connection => "mysql://glance:${admin_password}@${local_ip}/glance",
+  # Added after kilo
+  #workers             => $api_workers,
 }
 
 class { 'glance::backend::file': }
@@ -292,6 +296,9 @@ class { 'nova::api':
   admin_password                       => $admin_password,
   admin_tenant_name                    => 'services',
   neutron_metadata_proxy_shared_secret => $metadata_proxy_shared_secret,
+  osapi_compute_workers                => $api_workers,
+  ec2_workers                          => $api_workers,
+  metadata_workers                     => $api_workers,
   #ratelimits                          =>
   #'(POST, "*", .*, 10, MINUTE);\
   #(POST, "*/servers", ^/servers, 50, DAY);\
@@ -309,6 +316,7 @@ class { 'nova::scheduler':
 
 class { 'nova::conductor':
   enabled => true,
+  workers => $api_workers,
 }
 
 class { 'nova::consoleauth':
@@ -394,6 +402,8 @@ class { 'neutron::server':
   database_connection =>
 "mysql://neutron:${admin_password}@${local_ip}/neutron?charset=utf8",
   sync_db             => true,
+  api_workers         => $api_workers,
+  rpc_workers         => $api_workers,
 }
 
 class { 'neutron::db::mysql':
@@ -641,6 +651,7 @@ class { 'cinder::api':
   auth_uri          => "http://${local_ip}:5000/v2.0",
   identity_uri      => "http://${local_ip}:35357",
   sync_db           => true,
+  service_workers   => $api_workers,
   #validate          => true, # Fails with a V2 API endpoint
 }
 
