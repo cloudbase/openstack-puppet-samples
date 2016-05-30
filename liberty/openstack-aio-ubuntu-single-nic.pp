@@ -9,10 +9,10 @@ $cinder_lvm_loopback_device_size_mb = 10 * 1024
 $interface = 'eth0'
 $ext_bridge_interface = 'br-ex'
 $dns_nameservers = ['8.8.8.8', '8.8.4.4']
-$private_subnet_cidr = '10.0.0.0/24'
-$public_subnet_cidr = '192.168.209.0/24'
-$public_subnet_gateway = '192.168.209.2'
-$public_subnet_allocation_pools = ['start=192.168.209.30,end=192.168.209.50']
+$private_subnet_cidr = '192.168.1.0/24'
+$public_subnet_cidr = '10.0.2.0/16'
+$public_subnet_gateway = '10.0.1.1'
+$public_subnet_allocation_pools = ['start=10.0.2.30,end=10.0.2.50']
 
 # Note: this is executed on the master
 $gateway = generate('/bin/sh',
@@ -54,7 +54,7 @@ class { 'apt': }
 apt::source { 'ubuntu-cloud':
   location          =>  'http://ubuntu-cloud.archive.canonical.com/ubuntu',
   repos             =>  'main',
-  release           =>  'trusty-updates/kilo',
+  release           =>  'trusty-updates/liberty',
   include_src       =>  false,
   required_packages =>  'ubuntu-cloud-keyring',
 }
@@ -578,21 +578,18 @@ file_line { 'dashboard_default_role':
 }
 ->
 exec { 'get-openstack-dashboard-theme':
+
   command => 'wget -q https://github.com/cloudbase/horizon-cloudbase/releases/\
-download/v1.0/openstack-dashboard-cloudbase-theme.deb -O \
-/tmp/openstack-dashboard-cloudbase-theme.deb',
-  unless  => [ 'test -f /tmp/openstack-dashboard-cloudbase-theme.deb' ],
+download/v1.1/openstack-dashboard-cloudbase-theme_1.1-1.deb -O \
+/tmp/openstack-dashboard-cloudbase-theme_1.1-1.deb',
+  unless  => [ 'test -f /tmp/openstack-dashboard-cloudbase-theme_1.1-1.deb' ],
   path    => [ '/usr/bin/', '/bin' ],
-}
-->
-package { 'openstack-dashboard-ubuntu-theme':
-  ensure => absent,
 }
 ->
 package { 'openstack-dashboard-cloudbase-theme':
   ensure   => latest,
   provider => dpkg,
-  source   => '/tmp/openstack-dashboard-cloudbase-theme.deb'
+  source   => '/tmp/openstack-dashboard-cloudbase-theme_1.1-1.deb'
 }
 ~> Service['apache2']
 
