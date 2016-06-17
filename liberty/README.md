@@ -83,3 +83,56 @@ Command line environment variables:
 or
 
     source /root/keystonerc_demo
+
+### Troubleshooting
+
+#### puppetlabs-rabbitmq: Dependency cycle
+
+Latest master or anything after commit [28fc64a][0], causes dependency cycle when used with puppetlabs-apt 1.8.x version.
+
+```
+Error: Failed to apply catalog: Found 1 dependency cycle:
+(Anchor[apt::source::rabbitmq] => Apt::Source[rabbitmq] => Class[Rabbitmq::Repo::Apt] => Class[Apt::Update] => Exec[apt_update] => Class[Apt::Update] => Anchor[apt::source::rabbitmq])
+Try the '--graph' option and opening the resulting '.dot' file in OmniGraffle or GraphViz
+```
+
+It seems this happens because in commit [28fc64a][0] a requirement on Class['apt::update'] for ensuring updated repos was introduced which seems to be correctly handled only in puppetlabs-apt 2.x.
+
+More details can be found on the following bug [report][1].
+
+##### How to fix it ?
+
+- Upgrade the `puppetlabs-apt` module
+
+```bash
+~ $ sudo puppet module install puppetlabs-apt --version "2.0.0" --force
+```
+
+```
+Notice: Preparing to install into /etc/puppet/modules ...
+Notice: Downloading from https://forgeapi.puppetlabs.com ...
+Notice: Installing -- do not interrupt ...
+/etc/puppet/modules
+└── puppetlabs-apt (v2.0.0)
+```
+
+- Apply the `Update apt::source to match with new method` patch
+
+
+```bash
+wget https://goo.gl/WsDtjU -O /tmp/apt.diff && cd /etc/puppet/modules/rabbitmq/manifests/repo/ && sudo git apply /tmp/apt.diff && cd ~
+```
+
+```bash
+wget https://goo.gl/Na6V6o -O /tmp/rabbitmq_spec.diff && cd /etc/puppet/modules/rabbitmq/spec/classes/ && sudo git apply /tmp/rabbitmq_spec.diff && cd ~
+```
+
+```bash
+wget https://goo.gl/fM7daR -O /tmp/metadata.diff && cd /etc/puppet/modules/rabbitmq && sudo git apply /tmp/metadata.diff && cd ~
+```
+
+More information related to this patch can be found on the following [link][2].
+
+[0]: https://github.com/puppetlabs/puppetlabs-rabbitmq/commit/28fc64a7d536873daf2a93e6461611c7238e053e
+[1]: https://tickets.puppetlabs.com/browse/MODULES-2995
+[2]: https://github.com/puppetlabs/puppetlabs-rabbitmq/pull/423/commits/c6d3b3dda2ddcf6747dc6f8328a090f42a292a0e

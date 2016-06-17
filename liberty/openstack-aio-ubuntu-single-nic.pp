@@ -49,14 +49,16 @@ notify { "Netmask: ${local_ip_netmask}":}
 ->
 notify { "Gateway: ${gateway}":}
 
-class { 'apt': }
+package { 'ubuntu-cloud-keyring':
+  ensure => latest,
+}
 
+class { 'apt': }
 apt::source { 'ubuntu-cloud':
   location          =>  'http://ubuntu-cloud.archive.canonical.com/ubuntu',
   repos             =>  'main',
   release           =>  'trusty-updates/liberty',
-  include_src       =>  false,
-  required_packages =>  'ubuntu-cloud-keyring',
+  include           =>  {'src' => false,},
 }
 ->
 exec { 'apt-update':
